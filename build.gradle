@@ -1,0 +1,101 @@
+plugins {
+    id 'java'
+    id 'jacoco'
+    id 'checkstyle'
+    id 'org.springframework.boot' version '4.1.1'
+}
+
+group = 'io.github.selharem'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation platform('org.springframework.boot:spring-boot-dependencies:4.1.1')
+
+    // Security overrides until a Spring Boot patch release ships these versions (found by Trivy).
+    // Remove once the Boot BOM version is equal or newer.
+    implementation platform('tools.jackson:jackson-bom:3.1.7') // CVE-2026-68497
+    implementation platform('com.fasterxml.jackson:jackson-bom:2.22.3') // CVE-2026-68497
+    constraints {
+        ['tomcat-embed-core', 'tomcat-embed-el', 'tomcat-embed-websocket'].each { module ->
+            implementation("org.apache.tomcat.embed:${module}:11.0.26") {
+                because 'CVE-2026-65182, CVE-2026-65905, CVE-2026-68525'
+            }
+        }
+    }
+
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+    runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
+    runtimeOnly 'org.postgresql:postgresql'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    testImplementation 'com.tngtech.archunit:archunit-junit5:1.5.1'
+    testImplementation 'org.testcontainers:testcontainers-junit-jupiter:2.0.5'
+    testImplementation 'org.testcontainers:testcontainers-postgresql:2.0.5'
+}
+
+checkstyle {
+    toolVersion = '14.3.0'
+    maxWarnings = 0
+}
+
+dependencyLocking {
+    lockAllConfigurations()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs += ['-parameters', '-Xlint:all', '-Werror']
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+    failFast = false
+    testLogging {
+        events 'failed', 'skipped'
+        exceptionFormat = 'full'
+    }
+}
+
+tasks.named('test') {
+    finalizedBy tasks.named('jacocoTestReport')
+}
+
+tasks.named('jacocoTestReport') {
+    dependsOn tasks.named('test')
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+tasks.named('jacocoTestCoverageVerification') {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.85
+            }
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('jacocoTestCoverageVerification')
+}
