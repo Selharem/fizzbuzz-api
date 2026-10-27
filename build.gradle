@@ -2,7 +2,7 @@ plugins {
     id 'java'
     id 'jacoco'
     id 'checkstyle'
-    id 'org.springframework.boot' version '4.1.1'
+    id 'org.springframework.boot' version '4.1.2'
 }
 
 group = 'io.github.selharem'
@@ -19,7 +19,7 @@ repositories {
 }
 
 dependencies {
-    implementation platform('org.springframework.boot:spring-boot-dependencies:4.1.1')
+    implementation platform('org.springframework.boot:spring-boot-dependencies:4.1.2')
 
     // Security overrides until a Spring Boot patch release ships these versions (found by Trivy).
     // Remove once the Boot BOM version is equal or newer.
